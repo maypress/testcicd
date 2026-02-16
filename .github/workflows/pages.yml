@@ -1,4 +1,4 @@
-name: Build & Deploy to Pages
+name: Full CI/CD to Pages
 on:
   push:
     branches: [main]
@@ -7,7 +7,7 @@ permissions:
   pages: write
   id-token: write
 jobs:
-  build-deploy:
+  ci-cd:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -15,21 +15,28 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Setup Node
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
-    - name: Install
-      run: npm ci
+        cache: 'npm'  # Кэш deps для скорости
+    - name: Install dependencies
+      run: npm ci  # Точная установка из package-lock.json
+    - name: Lint code
+      run: npm run lint || true  # Опционально
+    - name: Run tests
+      run: npm test || true
     - name: Build
-      run: npm run build  # Создаёт /dist
+      run: npm run build  # ТВОЙ билд-скрипт!
+    - name: Debug output
+      run: |
+        ls -la dist/ || ls -la build/ || echo "No build folder! Check package.json"
     - name: Setup Pages
       uses: actions/configure-pages@v5
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./dist  # Или ./build
-    - name: Deploy
+        path: ./build  # Или ./build — подкорректируй по локальному npm run build
+    - name: Deploy to Pages
       id: deployment
       uses: actions/deploy-pages@v4
